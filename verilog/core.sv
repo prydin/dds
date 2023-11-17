@@ -111,7 +111,6 @@ module waveform_shaper #(
     initial begin
         $readmemh("sin-16-14.mem", sine);
         $readmemh("tri-16-14.mem", triangle);
-        $display("%h", sine[0]);
     end
 
     assign out = translate(phase);
@@ -131,11 +130,11 @@ module phase_acc #(
         parameter OUT_LENGTH = 16
    ) (
     input clk,// System clock
-    input [ACC_LENGTH-1:0] increment,    // Phase register increment per clock cycle
+    input [ACC_LENGTH-1:0] increment,   // Phase register increment per clock cycle
     input load_increment,               // Load internal register from increment bits (positive edge)
     input [OUT_LENGTH-1:0] phaseshift,  // Phaseshift
     input load_phaseshift,              // Load internal register from phaseshift bits (positive edge)
-    output[OUT_LENGTH-1:0] out          // Phase output register
+    output reg [OUT_LENGTH-1:0] out     // Phase output register
 );
     reg [ACC_LENGTH-1:0] acc;
     reg [ACC_LENGTH-1:0] increment_reg;
@@ -153,11 +152,12 @@ module phase_acc #(
 
     // Calculate the new value on positive clock
     always @(posedge clk) begin
-        acc <=  acc + increment_reg;
+        acc = acc + increment_reg;
+        out = acc[ACC_LENGTH - 1:ACC_LENGTH - OUT_LENGTH] + phaseshift_reg;
     end
 
     // Reduce to output phase length and add phase shift
-    assign out[OUT_LENGTH-1:0] = acc[ACC_LENGTH - OUT_LENGTH - 1:0] + phaseshift_reg;
+    // assign out =
 endmodule
 
 module shiftreg #( 

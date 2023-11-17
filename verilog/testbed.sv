@@ -26,7 +26,7 @@ module dds_tb();
     initial begin
         clk = 1'b0;
         #10
-        forever #1 clk = ~clk; 
+        repeat(2000) #1 clk = ~clk; 
     end
 
     initial begin 
@@ -34,32 +34,20 @@ module dds_tb();
         // Load a few bits into the freq register
         mode_in = 2;
         freq_cs = 1;
-        spi_clk = 0;
-        spi_data = 1;
-        #10
-        spi_clk = 1;
-        #10
-        spi_clk = 0;
-        spi_data = 1;
-        #10
-        spi_clk = 1;
-        #10
-        spi_clk = 0;
-        spi_data = 1;
-        #10
-        spi_clk = 1;
-        #10
-        spi_clk = 0;
-        spi_data = 1;
-        #10
-        spi_clk = 1;
-        #10
+
+        repeat(44) begin
+            spi_clk = 0;
+            spi_data = 1;
+            #10;
+            spi_clk = 1;
+            #10;
+        end
 
         // Lower freq_cs. Should cause freq to be loaded into the phase acc
         freq_cs = 0;
         #10
-        repeat(1000000) begin
-            $display("waveform_out %h", waveform_out);
+        repeat(1000) begin
+            $display("%d", waveform_out);
             #1;
         end
     end
