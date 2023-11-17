@@ -7,11 +7,12 @@ module dds_tb();
     reg freq_cs;
     reg phaseshift_cs;
     reg [1:0] mode_in;
-    wire [7:0] waveform_out;
+    wire [13:0] waveform_out;
 
     dds #(
-        .PHASE_LENGTH(8), 
-        .ACC_LENGTH(16)
+        .PHASE_LENGTH(16), 
+        .ACC_LENGTH(48),
+        .OUT_LENGTH(14)
     ) dut (
         .sys_clk(clk), 
         .spi_clk(spi_clk), 
@@ -29,7 +30,9 @@ module dds_tb();
     end
 
     initial begin 
+        
         // Load a few bits into the freq register
+        mode_in = 2;
         freq_cs = 1;
         spi_clk = 0;
         spi_data = 1;
@@ -37,7 +40,6 @@ module dds_tb();
         spi_clk = 1;
         #10
         spi_clk = 0;
-        /*
         spi_data = 1;
         #10
         spi_clk = 1;
@@ -52,11 +54,13 @@ module dds_tb();
         #10
         spi_clk = 1;
         #10
-        */
 
         // Lower freq_cs. Should cause freq to be loaded into the phase acc
         freq_cs = 0;
         #10
-        $display("waveform_out %h", waveform_out);
+        repeat(1000000) begin
+            $display("waveform_out %h", waveform_out);
+            #1;
+        end
     end
 endmodule

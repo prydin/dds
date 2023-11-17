@@ -1,6 +1,7 @@
 module dds 
     #(parameter ACC_LENGTH = 48, 
-    parameter PHASE_LENGTH = 14
+    parameter PHASE_LENGTH = 16,
+    parameter OUT_LENGTH = 16
     ) (
         input sys_clk, 
         input spi_clk,
@@ -8,7 +9,7 @@ module dds
         input freq_cs,
         input phaseshift_cs,
         input [1:0] mode_in,
-        output [PHASE_LENGTH-1:0] waveform_out
+        output [OUT_LENGTH-1:0] waveform_out
     );
 
     wire [ACC_LENGTH-1:0] freq_in;
@@ -58,11 +59,12 @@ module dds
 
     // Waveform shaper
     waveform_shaper #(
-        .LENGTH(PHASE_LENGTH)
+        .PHASE_LENGTH(PHASE_LENGTH),
+        .OUT_LENGTH(OUT_LENGTH)
     ) waveform_shaper (
-        .phase(reduced_phase[PHASE_LENGTH-1:0]),
+        .phase(reduced_phase),
         .mode(mode_in[1:0]),
-        .out(waveform_out[PHASE_LENGTH-1:0])
+        .out(waveform_out)
     );
 endmodule
 
@@ -93,26 +95,37 @@ endmodule
 
 
 module waveform_shaper #(
-    parameter LENGTH=14
+    parameter PHASE_LENGTH=16,
+    parameter OUT_LENGTH=14
     ) (
-        input [LENGTH-1:0] phase,
+        input [PHASE_LENGTH-1:0] phase,
         input [1:0] mode,
-        output reg [LENGTH-1:0] out
+        output reg [OUT_LENGTH-1:0] out
     );
 
+    // Waveform lookup tables
+    localparam TABLE_SIZE = 2**PHASE_LENGTH;
+    reg [OUT_LENGTH-1:0] sine[TABLE_SIZE];
+    reg [OUT_LENGTH-1:0] triangle[TABLE_SIZE];
+
+    initial begin
+        $readmemh("sin-16-14.mem", sine);
+        $readmemh("tri-16-14.mem", triangle);
+        $display("%h", sine[0]);
+    end
 
     always @(phase) begin
         case(mode)
-            2'b00: assign out = phase; // Ramp
-            2'b01: assign out = 0; // TODO: Triangle 
-            2'b10: assign out = 0; // TODO: Sine lookup table
+            2'b00: out <= phase;              // Ramp
+            2'b01: out <= triangle[phase];    // Triangle
+            2'b10: out <= sine[phase];        // Sine
         endcase
     end
 endmodule
 
 module phase_acc #( 
         parameter ACC_LENGTH = 48,
-        parameter OUT_LENGTH = 14
+        parameter OUT_LENGTH = 16
    ) (
     input clk,// System clock
     input [ACC_LENGTH-1:0] increment,    // Phase register increment per clock cycle
@@ -138,10 +151,9 @@ module phase_acc #(
     // Calculate the new value on positive clock
     always @(posedge clk) begin
         acc <=  acc + increment_reg;
-        $display("Acc: %h", acc);
     end
 
-    // Reduce to 14 bits and add phase shift
+    // Reduce to output phase length and add phase shift
     assign out[OUT_LENGTH-1:0] = acc[ACC_LENGTH - OUT_LENGTH - 1:0] + phaseshift_reg;
 endmodule
 
