@@ -100,7 +100,7 @@ module waveform_shaper #(
     ) (
         input [PHASE_LENGTH-1:0] phase,
         input [1:0] mode,
-        output reg [OUT_LENGTH-1:0] out
+        output [OUT_LENGTH-1:0] out
     );
 
     // Waveform lookup tables
@@ -114,13 +114,16 @@ module waveform_shaper #(
         $display("%h", sine[0]);
     end
 
-    always @(phase) begin
+    assign out = translate(phase);
+
+    function [OUT_LENGTH-1:0] translate(input [PHASE_LENGTH-1:0] phase);
         case(mode)
-            2'b00: out <= phase;              // Ramp
-            2'b01: out <= triangle[phase];    // Triangle
-            2'b10: out <= sine[phase];        // Sine
+            2'b00: translate = phase;              // Ramp
+            2'b01: translate = triangle[phase];    // Triangle
+            2'b10: translate = sine[phase];        // Sine
+            default: translate = 0;             
         endcase
-    end
+    endfunction
 endmodule
 
 module phase_acc #( 
